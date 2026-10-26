@@ -1,38 +1,49 @@
 # NFL outcome model
 
-Predicting the probability that the home side wins an NFL game, from historical
-results only, and checking whether those probabilities are any good.
+Probabilistic prediction of NFL game outcomes from historical results, evaluated
+with proper scoring rules against simple baselines and bookmaker odds.
 
-**Status: in progress.** No results yet. This README will carry them, whatever
-they turn out to be, including if the model doesn't beat the bookmaker.
+**Status:** work in progress. Results will be reported as they are, including
+where a model fails to beat its baseline.
 
-## What it does
+## Approach
 
-- Pulls public NFL results (ESPN's scoreboard endpoint or nflverse).
-- Loads them into SQLite and builds the features in SQL: rolling form, points
-  for and against, rest days, home advantage. Every feature uses only games
-  that finished before kickoff.
-- Fits a logistic regression baseline, then a gradient-boosted model.
-- Trains on earlier seasons and tests on later ones. Nothing is shuffled across
-  time.
+- **Data:** game results from public sources (ESPN scoreboard API, nflverse),
+  stored in SQLite.
+- **Features:** built in SQL with window functions over each team's previous
+  games: rolling points scored and conceded, recent win rate, rest days and
+  home field. A game's features use only games completed before its kickoff.
+- **Models:** logistic regression as the baseline, then gradient-boosted trees
+  (LightGBM). Both output P(home win).
+- **Validation:** time-ordered split. Train on earlier seasons, tune on a
+  validation season, test on later seasons. No shuffling across time.
 
-## How it's measured
+## Evaluation
 
-The measure was fixed before any model was fitted.
+Metrics are log loss, Brier score and a calibration plot (reliability diagram)
+on the held-out seasons.
 
-- Log loss and Brier score on held-out seasons.
-- A calibration plot: when the model says 70%, does the home side win about
-  70% of the time?
-- Baselines to beat, in order of difficulty: always pick the home side, the
-  logistic regression, and the bookmaker's implied probability (from the
-  moneyline, with the margin removed) where historical lines can be found.
-  A model that doesn't beat a baseline gets dropped, and the README says so.
+| Baseline | Prediction |
+|---|---|
+| Home rate | Constant P(home win) from the training seasons |
+| Logistic regression | Fitted on the SQL features |
+| Bookmaker | Implied probability from the moneyline, overround removed |
 
-## Tests
+A more complex model is kept only if it beats the simpler one on the
+validation season.
 
-The data pipeline and feature code have tests, mainly leakage checks: a
-feature for a game must not change if every game after it is deleted.
+## Testing
 
-## Running it
+`pytest` covers the data pipeline and feature code:
 
-To follow once the pipeline is in.
+- **Leakage:** a game's features are unchanged when all later games are removed.
+- **Validation:** no duplicate games, at most one game per team per week, no
+  overlap between training and test seasons.
+
+## Results
+
+To be added.
+
+## Usage
+
+To be added.
